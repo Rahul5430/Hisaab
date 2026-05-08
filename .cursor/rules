@@ -1,0 +1,66 @@
+# Hisaab — Cursor AI Rules
+
+# Read this file first. Always.
+
+## Prime Directive
+
+You are building "Hisaab" — a family expense tracking PWA for 2 users (Rahul and his sister).
+Before making ANY architectural decision, writing ANY new file, or choosing ANY library,
+read the relevant doc(s) from `.cursor/docs/`. Never guess at a decision that is already made.
+
+## When to read which doc
+
+### Starting a new feature or screen
+
+→ Read: 00-overview.md, 05-features.md, 06-screens.md
+
+### Writing or modifying any component
+
+→ Read: 10-design-system.md, 06-screens.md, 02-architecture.md
+
+### Writing or modifying any database access
+
+→ Read: 03-schema.md, 04-api-map.md, 02-architecture.md
+
+### Working on auth, groups, or user management
+
+→ Read: 03-schema.md, 05-features.md
+
+### Working on SMS parsing or receipt scanning
+
+→ Read: 07-sms-parsing.md, 08-ai-models.md
+
+### Choosing or integrating any AI model or API
+
+→ Read: 08-ai-models.md, 04-api-map.md
+
+### Working on notifications or Cloud Functions
+
+→ Read: 11-notifications.md, 04-api-map.md
+
+### Setting up or modifying the tech stack
+
+→ Read: 01-tech-stack.md, 02-architecture.md
+
+### Working on categories or budgets
+
+→ Read: 09-categories.md, 03-schema.md
+
+### Unsure about anything
+
+→ Read: 00-overview.md first, then the most relevant doc above
+
+## Non-negotiable rules
+
+1. TypeScript everywhere. No `any` types. Ever.
+2. All Firestore access goes through `/lib/repositories/`. Never call Firestore directly from a component or hook.
+3. All data shapes are defined as Zod schemas in `/lib/validators/`. These are the single source of truth.
+4. Server secrets (API keys) never touch the client. All third-party API calls go through `/app/api/` routes.
+5. All AI calls (Gemini) are made server-side only, never from the client.
+6. Follow the feature-based folder structure defined in 02-architecture.md exactly.
+7. Every new Firestore collection or field change must be reflected in 03-schema.md before writing code.
+8. Semantic colors are non-negotiable. Never use `text-red-500` for anything other than "spent". Read 10-design-system.md.
+9. No inline styles. All styling via Tailwind utility classes with the custom token layer.
+10. All forms use React Hook Form + Zod. No uncontrolled inputs.
+11. Bottom sheets on mobile for all forms. No centered modals for data entry.
+12. PWA offline support is enabled by default via Firestore's offline persistence. Never disable it.
