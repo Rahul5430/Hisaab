@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
 		description: 'Family expense and investment tracker',
 		start_url: '/',
 		display: 'standalone',
-		background_color: '#000000',
-		theme_color: '#5B5BD6',
+		background_color: 'black',
+		theme_color: 'hsl(239, 68%, 58%)',
 		orientation: 'portrait',
 		icons: [
 			{

@@ -22,7 +22,11 @@ const AppShellContext = createContext<AppShellContextValue | null>(null);
 
 const defaultConfig: AppShellConfig = { showPeriodSelector: false };
 
-export function AppShellProvider({ children }: { children: React.ReactNode }) {
+export function AppShellProvider({
+	children,
+}: {
+	children: React.ReactNode;
+}): React.JSX.Element {
 	const [config, setConfigState] = useState<AppShellConfig>(defaultConfig);
 
 	const setConfig = useCallback((next: Partial<AppShellConfig>) => {
@@ -44,7 +48,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
 	);
 }
 
-export function useAppShell() {
+export function useAppShell(): AppShellContextValue {
 	const ctx = useContext(AppShellContext);
 	if (!ctx) {
 		throw new Error('useAppShell must be used within AppShellProvider');

@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 
-function randomInviteCode(length: number) {
+function randomInviteCode(length: number): string {
 	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 	let out = '';
 	for (let i = 0; i < length; i++) {
@@ -11,7 +11,7 @@ function randomInviteCode(length: number) {
 	return out;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
 	const authHeader = req.headers.get('authorization') ?? '';
 	const token = authHeader.startsWith('Bearer ')
 		? authHeader.slice('Bearer '.length)

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 
 import { useUIStore } from '@/store/ui.store';
 
-export function FAB() {
+export function FAB(): React.JSX.Element {
 	const pathname = usePathname();
 	const setAddExpenseSheetOpen = useUIStore((s) => s.setAddExpenseSheetOpen);
 	const setAddInvestmentSheetOpen = useUIStore(

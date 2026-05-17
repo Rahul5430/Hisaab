@@ -18,7 +18,7 @@ const investmentsItem: NavItem = {
 	icon: TrendingUp,
 };
 
-export function BottomNav() {
+export function BottomNav(): React.JSX.Element {
 	const pathname = usePathname();
 	const router = useRouter();
 

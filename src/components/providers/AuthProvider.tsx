@@ -3,7 +3,11 @@
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useAuthStore } from '@/store/auth.store';
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+	children,
+}: {
+	children: React.ReactNode;
+}): React.JSX.Element {
 	useAuth();
 
 	const loading = useAuthStore((s) => s.loading);

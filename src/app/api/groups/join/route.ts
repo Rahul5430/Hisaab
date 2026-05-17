@@ -2,7 +2,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
 	const authHeader = req.headers.get('authorization') ?? '';
 	const token = authHeader.startsWith('Bearer ')
 		? authHeader.slice('Bearer '.length)

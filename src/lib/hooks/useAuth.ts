@@ -12,7 +12,11 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import { auth } from '@/lib/firebase/client';
-import { createUser, getUser } from '@/lib/repositories/users.repository';
+import {
+	createUser,
+	getUser,
+	updateUser,
+} from '@/lib/repositories/users.repository';
 import type { UserSchema } from '@/lib/validators/user.schema';
 import { useAuthStore } from '@/store/auth.store';
 import { useUIStore } from '@/store/ui.store';
@@ -40,7 +44,15 @@ function buildUserDoc(firebaseUser: FirebaseUser): UserSchema {
 	};
 }
 
-export function useAuth() {
+type UseAuthResult = {
+	user: UserSchema | null;
+	loading: boolean;
+	signInWithGoogle: () => Promise<{ isNewUser: boolean }>;
+	signOut: () => Promise<void>;
+	updateCurrentUser: (data: Partial<UserSchema>) => Promise<void>;
+};
+
+export function useAuth(): UseAuthResult {
 	const user = useAuthStore((s) => s.user);
 	const loading = useAuthStore((s) => s.loading);
 	const setUser = useAuthStore((s) => s.setUser);
@@ -117,5 +129,14 @@ export function useAuth() {
 		}
 	}, [clearUser, setLoading]);
 
-	return { user, loading, signInWithGoogle, signOut };
+	const updateCurrentUser = useCallback(
+		async (data: Partial<UserSchema>): Promise<void> => {
+			if (!user) throw new Error('No signed-in user');
+			await updateUser(user.uid, data);
+			setUser({ ...user, ...data, updatedAt: Timestamp.now() });
+		},
+		[setUser, user]
+	);
+
+	return { user, loading, signInWithGoogle, signOut, updateCurrentUser };
 }

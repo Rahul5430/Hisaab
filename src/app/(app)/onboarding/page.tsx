@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { auth } from '@/lib/firebase/client';
-import { updateUser } from '@/lib/repositories/users.repository';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -39,6 +39,7 @@ export default function OnboardingPage() {
 	const router = useRouter();
 	const user = useAuthStore((s) => s.user);
 	const loading = useAuthStore((s) => s.loading);
+	const { updateCurrentUser } = useAuth();
 
 	const [step, setStep] = useState<Step>(1);
 	const [displayName, setDisplayName] = useState(user?.displayName ?? '');
@@ -125,7 +126,7 @@ export default function OnboardingPage() {
 										onClick={async () => {
 											setSubmitting(true);
 											try {
-												await updateUser(user.uid, {
+												await updateCurrentUser({
 													displayName:
 														displayName.trim(),
 												});
@@ -194,7 +195,7 @@ export default function OnboardingPage() {
 												const amount = Number(
 													monthlyIncome || '0'
 												);
-												await updateUser(user.uid, {
+												await updateCurrentUser({
 													monthlyIncome: amount,
 												});
 												advance();
@@ -296,18 +297,9 @@ export default function OnboardingPage() {
 																	'Failed'
 																);
 															}
-															await updateUser(
-																user.uid,
-																{
-																	onboardingCompleted: true,
-																}
-															);
-															useAuthStore
-																.getState()
-																.setUser({
-																	...user,
-																	onboardingCompleted: true,
-																});
+															await updateCurrentUser({
+																onboardingCompleted: true,
+															});
 															router.replace(
 																'/home'
 															);
@@ -399,18 +391,9 @@ export default function OnboardingPage() {
 																		'Failed'
 																);
 															}
-															await updateUser(
-																user.uid,
-																{
-																	onboardingCompleted: true,
-																}
-															);
-															useAuthStore
-																.getState()
-																.setUser({
-																	...user,
-																	onboardingCompleted: true,
-																});
+															await updateCurrentUser({
+																onboardingCompleted: true,
+															});
 															router.replace(
 																'/home'
 															);
@@ -445,15 +428,9 @@ export default function OnboardingPage() {
 										className='h-12 w-full text-sm font-medium text-muted-foreground underline underline-offset-4'
 										onClick={async () => {
 											try {
-												await updateUser(user.uid, {
+												await updateCurrentUser({
 													onboardingCompleted: true,
 												});
-												useAuthStore
-													.getState()
-													.setUser({
-														...user,
-														onboardingCompleted: true,
-													});
 											} catch {
 												toast.error(
 													'Something went wrong. Please try again.'
