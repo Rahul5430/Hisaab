@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
+import { AddExpenseSheet } from '@/components/features/expenses/AddExpenseSheet';
 import {
 	AppShellProvider,
 	useAppShell,
@@ -135,6 +136,7 @@ function AppShellFrame({
 				</div>
 
 				<ProfileStack />
+				<AddExpenseSheet />
 			</div>
 		</div>
 	);

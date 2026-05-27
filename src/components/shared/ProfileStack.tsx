@@ -18,6 +18,8 @@ import { useTheme } from 'next-themes';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { BudgetManager } from '@/components/features/profile/BudgetManager';
+import { GroupsSection } from '@/components/features/profile/GroupsSection';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,13 +43,19 @@ type Row = {
 	right?: React.ReactNode;
 };
 
+const currencyFormatter = new Intl.NumberFormat('en-IN', {
+	style: 'currency',
+	currency: 'INR',
+	maximumFractionDigits: 0,
+});
+
 export function ProfileStack(): React.JSX.Element {
 	const open = useUIStore((s) => s.profileStackOpen);
 	const setOpen = useUIStore((s) => s.setProfileStackOpen);
 	const user = useAuthStore((s) => s.user);
 	const { signOut, updateCurrentUser } = useAuth();
 	const { theme, setTheme } = useTheme();
-	
+
 	const [isEditingName, setIsEditingName] = useState(false);
 	const [editingName, setEditingName] = useState('');
 	const [isEditingIncome, setIsEditingIncome] = useState(false);
@@ -67,7 +75,7 @@ export function ProfileStack(): React.JSX.Element {
 
 	const handleSaveName = async () => {
 		if (!user || !editingName.trim()) return;
-		
+
 		try {
 			await updateCurrentUser({ displayName: editingName.trim() });
 			setIsEditingName(false);
@@ -80,13 +88,13 @@ export function ProfileStack(): React.JSX.Element {
 
 	const handleSaveIncome = async () => {
 		if (!user || !editingIncome) return;
-		
+
 		const income = parseFloat(editingIncome);
 		if (isNaN(income) || income < 0) {
 			toast.error('Please enter a valid income amount');
 			return;
 		}
-		
+
 		try {
 			await updateCurrentUser({ monthlyIncome: income });
 			setIsEditingIncome(false);
@@ -103,22 +111,10 @@ export function ProfileStack(): React.JSX.Element {
 
 	const rows: Row[] = [
 		{
-			id: 'groups',
-			label: 'Groups',
-			icon: FolderKanban,
-			action: () => handleComingSoon('Groups section'),
-		},
-		{
 			id: 'categories',
 			label: 'Categories',
 			icon: LayoutGrid,
 			action: () => handleComingSoon('Categories section'),
-		},
-		{
-			id: 'budgets',
-			label: 'Budgets',
-			icon: Gauge,
-			action: () => handleComingSoon('Budgets section'),
 		},
 		{
 			id: 'recurring',
@@ -186,7 +182,9 @@ export function ProfileStack(): React.JSX.Element {
 			icon: ChartPie,
 			right: (
 				<div className='text-sm text-muted-foreground'>
-					{user?.monthlyIncome ? `₹${user.monthlyIncome.toLocaleString()}` : 'Not set'}
+					{user?.monthlyIncome
+						? currencyFormatter.format(user.monthlyIncome)
+						: 'Not set'}
 				</div>
 			),
 			action: () => {
@@ -219,7 +217,7 @@ export function ProfileStack(): React.JSX.Element {
 					<SheetTitle>Profile</SheetTitle>
 				</SheetHeader>
 
-				<div className='space-y-6 p-4'>
+				<div className='min-h-0 flex-1 space-y-6 overflow-y-auto p-4'>
 					<section className='space-y-3'>
 						<div className='flex items-center gap-3'>
 							<Avatar className='size-10'>
@@ -236,13 +234,18 @@ export function ProfileStack(): React.JSX.Element {
 									<div className='flex items-center gap-2'>
 										<Input
 											value={editingName}
-											onChange={(e) => setEditingName(e.target.value)}
+											onChange={(e) =>
+												setEditingName(e.target.value)
+											}
 											onBlur={handleSaveName}
 											onKeyDown={(e) => {
-												if (e.key === 'Enter') handleSaveName();
+												if (e.key === 'Enter')
+													handleSaveName();
 												if (e.key === 'Escape') {
 													setIsEditingName(false);
-													setEditingName(user?.displayName || '');
+													setEditingName(
+														user?.displayName || ''
+													);
 												}
 											}}
 											className='h-8 text-sm'
@@ -251,10 +254,12 @@ export function ProfileStack(): React.JSX.Element {
 										/>
 									</div>
 								) : (
-									<div 
+									<div
 										className='truncate text-sm font-medium cursor-pointer'
 										onClick={() => {
-											setEditingName(user?.displayName || '');
+											setEditingName(
+												user?.displayName || ''
+											);
 											setIsEditingName(true);
 										}}
 									>
@@ -271,13 +276,19 @@ export function ProfileStack(): React.JSX.Element {
 							<div className='flex items-center gap-2'>
 								<Input
 									value={editingIncome}
-									onChange={(e) => setEditingIncome(e.target.value)}
+									onChange={(e) =>
+										setEditingIncome(e.target.value)
+									}
 									onBlur={handleSaveIncome}
 									onKeyDown={(e) => {
-										if (e.key === 'Enter') handleSaveIncome();
+										if (e.key === 'Enter')
+											handleSaveIncome();
 										if (e.key === 'Escape') {
 											setIsEditingIncome(false);
-											setEditingIncome(user?.monthlyIncome?.toString() || '');
+											setEditingIncome(
+												user?.monthlyIncome?.toString() ||
+													''
+											);
 										}
 									}}
 									className='h-8 text-sm'
@@ -305,6 +316,22 @@ export function ProfileStack(): React.JSX.Element {
 						>
 							Sign Out
 						</Button>
+					</section>
+
+					<section className='space-y-3'>
+						<div className='flex items-center gap-2 text-sm font-semibold'>
+							<FolderKanban className='size-4 text-muted-foreground' />
+							Groups
+						</div>
+						<GroupsSection />
+					</section>
+
+					<section className='space-y-3'>
+						<div className='flex items-center gap-2 text-sm font-semibold'>
+							<Gauge className='size-4 text-muted-foreground' />
+							Budgets
+						</div>
+						<BudgetManager />
 					</section>
 
 					<section className='space-y-2'>

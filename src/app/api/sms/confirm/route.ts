@@ -26,7 +26,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 		const token = authHeader.substring(7);
 		let decodedToken;
-		
+
 		try {
 			decodedToken = await adminAuth.verifyIdToken(token);
 		} catch {
@@ -40,7 +40,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 		// Parse and validate request body
 		const body = await request.json();
-		const { merchantRaw, merchantNormalized, categoryId, subcategoryId, paymentMethod } = requestSchema.parse(body);
+		const {
+			merchantRaw,
+			merchantNormalized,
+			categoryId,
+			subcategoryId,
+			paymentMethod,
+		} = requestSchema.parse(body);
 
 		// Query for existing pattern
 		const existingPatternQuery = await adminDb
@@ -56,9 +62,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 			// Update existing pattern
 			const existingDoc = existingPatternQuery.docs[0];
 			const existingData = existingDoc.data();
-			
+
+			if (existingData.source === 'admin_override') {
+				return NextResponse.json({ success: true });
+			}
+
 			const newConfirmedCount = (existingData.confirmedCount || 0) + 1;
-			const newConfidence = Math.min((existingData.confidence || 0) + 0.1, 1.0);
+			const newConfidence = Math.min(
+				(existingData.confidence || 0) + 0.1,
+				1.0
+			);
 
 			await existingDoc.ref.update({
 				merchantNormalized,
