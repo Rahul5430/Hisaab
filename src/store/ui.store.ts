@@ -26,27 +26,68 @@ type UIState = {
 	reset: () => void;
 };
 
-export const useUIStore = create<UIState>((set) => ({
-	activePeriod: 'today',
-	customDateRange: null,
-	selectedGroupId: null,
-	addExpenseSheetOpen: false,
-	addInvestmentSheetOpen: false,
-	profileStackOpen: false,
-	setActivePeriod: (activePeriod) => set({ activePeriod }),
-	setCustomDateRange: (customDateRange) => set({ customDateRange }),
-	setSelectedGroupId: (selectedGroupId) => set({ selectedGroupId }),
-	setAddExpenseSheetOpen: (open) => set({ addExpenseSheetOpen: open }),
-	setAddInvestmentSheetOpen: (open) => set({ addInvestmentSheetOpen: open }),
-	setProfileStackOpen: (open) => set({ profileStackOpen: open }),
-	resetDateRange: () => set({ customDateRange: null }),
-	reset: () =>
-		set({
-			activePeriod: 'month',
-			customDateRange: null,
-			selectedGroupId: null,
-			addExpenseSheetOpen: false,
-			addInvestmentSheetOpen: false,
-			profileStackOpen: false,
-		}),
-}));
+export const useUIStore = create<UIState>((set) => {
+	// Initialize from localStorage when available
+	let initialActive: ActivePeriod = 'today';
+	let initialCustom: CustomDateRange | null = null;
+	try {
+		const raw = localStorage.getItem('ui.state');
+		if (raw) {
+			const parsed = JSON.parse(raw);
+			if (parsed?.activePeriod) initialActive = parsed.activePeriod;
+			if (parsed?.customDateRange) initialCustom = parsed.customDateRange;
+		}
+	} catch (error) {
+		console.warn('Failed to read UI state from localStorage', error);
+	}
+
+	const persist = () => {
+		try {
+			const state = {
+				activePeriod: get().activePeriod,
+				customDateRange: get().customDateRange,
+			};
+			localStorage.setItem('ui.state', JSON.stringify(state));
+		} catch (error) {
+			console.warn('Failed to persist UI state to localStorage', error);
+		}
+	};
+
+	const get = () => store as unknown as UIState;
+
+	const store = {
+		activePeriod: initialActive,
+		customDateRange: initialCustom,
+		selectedGroupId: null,
+		addExpenseSheetOpen: false,
+		addInvestmentSheetOpen: false,
+		profileStackOpen: false,
+		setActivePeriod: (activePeriod: ActivePeriod) => {
+			set({ activePeriod });
+			persist();
+		},
+		setCustomDateRange: (customDateRange: CustomDateRange | null) => {
+			set({ customDateRange });
+			persist();
+		},
+		setSelectedGroupId: (selectedGroupId: string | null) => set({ selectedGroupId }),
+		setAddExpenseSheetOpen: (open: boolean) => set({ addExpenseSheetOpen: open }),
+		setAddInvestmentSheetOpen: (open: boolean) => set({ addInvestmentSheetOpen: open }),
+		setProfileStackOpen: (open: boolean) => set({ profileStackOpen: open }),
+		resetDateRange: () => {
+			set({ customDateRange: null });
+			persist();
+		},
+		reset: () =>
+			set({
+				activePeriod: 'month',
+				customDateRange: null,
+				selectedGroupId: null,
+				addExpenseSheetOpen: false,
+				addInvestmentSheetOpen: false,
+				profileStackOpen: false,
+			}),
+	};
+
+	return store;
+});

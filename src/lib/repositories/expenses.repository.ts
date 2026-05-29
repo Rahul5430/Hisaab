@@ -71,7 +71,9 @@ export async function getExpenses(
 		});
 	}
 
-	return Array.from(byId.values());
+	return Array.from(byId.values()).sort((a, b) =>
+		b.date.localeCompare(a.date)
+	);
 }
 
 export async function getExpenseById(

@@ -6,17 +6,26 @@ type SummaryBarProps = {
 	remaining: number;
 };
 
-const currencyFormatter = new Intl.NumberFormat('en-IN', {
-	style: 'currency',
-	currency: 'INR',
-	maximumFractionDigits: 0,
-});
+function formatCompact(value: number): string {
+	const abs = Math.abs(value);
+	const sign = value < 0 ? '-' : '';
+	if (abs >= 10000000) {
+		return `${sign}₹${(abs / 10000000).toFixed(1).replace(/\.0$/, '')}Cr`;
+	}
+	if (abs >= 100000) {
+		return `${sign}₹${(abs / 100000).toFixed(1).replace(/\.0$/, '')}L`;
+	}
+	if (abs >= 1000) {
+		return `${sign}₹${(abs / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+	}
+	return `${sign}₹${abs}`;
+}
 
 export function SummaryBar({
 	totalSpent,
 	totalInvested,
 	remaining,
-}: SummaryBarProps) {
+}: Readonly<SummaryBarProps>) {
 	const remainingColor =
 		remaining < 0 ? 'text-(--color-spent)' : 'text-(--color-positive)';
 
@@ -25,19 +34,19 @@ export function SummaryBar({
 			<div className='min-w-0 rounded-xl border border-[--color-border] bg-background p-4'>
 				<div className='text-xs text-muted-foreground'>Spent</div>
 				<div className='truncate text-2xl font-semibold text-(--color-spent)'>
-					{currencyFormatter.format(totalSpent)}
+					{formatCompact(totalSpent)}
 				</div>
 			</div>
 			<div className='min-w-0 rounded-xl border border-[--color-border] bg-background p-4'>
 				<div className='text-xs text-muted-foreground'>Invested</div>
 				<div className='truncate text-2xl font-semibold text-(--color-invest)'>
-					{currencyFormatter.format(totalInvested)}
+					{formatCompact(totalInvested)}
 				</div>
 			</div>
 			<div className='min-w-0 rounded-xl border border-[--color-border] bg-background p-4'>
 				<div className='text-xs text-muted-foreground'>Left</div>
 				<div className={`truncate text-2xl font-semibold ${remainingColor}`}>
-					{currencyFormatter.format(remaining)}
+					{formatCompact(remaining)}
 				</div>
 			</div>
 		</section>

@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { createHash } from 'crypto';
 import type { NextRequest} from 'next/server';
 import {NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -60,7 +61,8 @@ async function getCachedResult(hash: string): Promise<ParsedExpense | null> {
 			return doc.data() as ParsedExpense;
 		}
 		return null;
-	} catch {
+	} catch (error) {
+		console.warn('Failed to read cached SMS parse result', error);
 		return null;
 	}
 }
@@ -71,8 +73,8 @@ async function cacheResult(hash: string, result: ParsedExpense): Promise<void> {
 			...result,
 			cachedAt: new Date().toISOString(),
 		});
-	} catch {
-		// Ignore cache errors
+	} catch (error) {
+		console.warn('Failed to cache SMS parse result', error);
 	}
 }
 
@@ -104,7 +106,7 @@ SMS: ${smsText}`;
 
 	try {
 		const result = await model.generateContent(prompt);
-		const response = await result.response;
+		const response = result.response;
 		let text = response.text();
 		
 		// Remove markdown fences if present
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 	try {
 		// Verify Firebase ID token
 		const authHeader = request.headers.get('Authorization');
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
+		if (!authHeader?.startsWith('Bearer ')) {
 			return NextResponse.json(
 				{ error: 'Missing or invalid authorization header' },
 				{ status: 401 }
@@ -143,13 +145,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 		const token = authHeader.substring(7);
 		try {
-		await adminAuth.verifyIdToken(token);
-	} catch {
-		return NextResponse.json(
-			{ error: 'Invalid authentication token' },
-			{ status: 401 }
-		);
-	}
+			await adminAuth.verifyIdToken(token);
+		} catch {
+			return NextResponse.json(
+				{ error: 'Invalid authentication token' },
+				{ status: 401 }
+			);
+		}
+
+		if (process.env.DISABLE_GEMINI === 'true') {
+			return NextResponse.json({
+				parsed: {
+					amount: null,
+					currency: 'INR',
+					merchant: null,
+					paymentMethod: null,
+					upiId: null,
+					date: null,
+					time: null,
+					suggestedCategoryId: null,
+					suggestedSubcategoryId: null,
+					confidence: 0,
+					resolvedBy: 'none',
+				},
+			});
+		}
 
 		// Parse and validate request body
 		const body = await request.json();

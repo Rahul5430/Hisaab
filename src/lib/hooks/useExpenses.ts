@@ -91,6 +91,8 @@ export function useExpenses(): UseExpensesResult {
 	const groupIds = groups.map((group) => group.id);
 	const { from, to } = getDateRange(activePeriod, customDateRange);
 
+	const enabled = Boolean(uid) && !groupsLoading;
+
 	const {
 		data: allExpenses = [],
 		isLoading,
@@ -103,8 +105,10 @@ export function useExpenses(): UseExpensesResult {
 			activePeriod,
 			customDateRange,
 		],
-		queryFn: () => getExpenses(uid ?? '', groupIds, from, to),
-		enabled: Boolean(uid) && !groupsLoading,
+		queryFn: async () => {
+			return getExpenses(uid ?? '', groupIds, from, to);
+		},
+		enabled,
 	});
 
 	const expenses = selectedGroupId

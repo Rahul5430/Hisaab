@@ -29,18 +29,12 @@ export function BottomNav(): React.JSX.Element {
 			<button
 				key={item.href}
 				type='button'
-				className='flex h-12 flex-col items-center justify-center gap-1'
+				className='flex h-12 flex-col items-center justify-center gap-1 transition-colors'
 				onClick={() => router.push(item.href)}
 			>
-				<div
-					className={cn(
-						'h-4 w-0.5 rounded-full',
-						isActive ? 'bg-(--color-brand)' : 'bg-transparent'
-					)}
-				/>
 				<Icon
 					className={cn(
-						'size-[22px]',
+						'size-5.5',
 						isActive
 							? 'text-(--color-brand)'
 							: 'text-muted-foreground'
@@ -61,8 +55,8 @@ export function BottomNav(): React.JSX.Element {
 	};
 
 	return (
-		<nav className='sticky bottom-0 z-50 border-t border-[--color-border] bg-background pb-[env(safe-area-inset-bottom)]'>
-			<div className='grid h-16 grid-cols-[1fr_64px_1fr] items-center px-4'>
+		<nav className='fixed inset-x-0 bottom-0 z-50 border-t border-[--color-border] bg-background pb-[env(safe-area-inset-bottom)]'>
+			<div className='mx-auto grid h-16 max-w-107.5 grid-cols-[1fr_64px_1fr] items-center px-4'>
 				{renderItem(homeItem)}
 				<div aria-hidden className='h-12 w-16' />
 				{renderItem(investmentsItem)}

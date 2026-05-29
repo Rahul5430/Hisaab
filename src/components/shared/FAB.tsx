@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 
 import { useUIStore } from '@/store/ui.store';
 
-export function FAB(): React.JSX.Element {
+export function Fab(): React.JSX.Element {
 	const pathname = usePathname();
 	const setAddExpenseSheetOpen = useUIStore((s) => s.setAddExpenseSheetOpen);
 	const setAddInvestmentSheetOpen = useUIStore(
@@ -16,7 +16,7 @@ export function FAB(): React.JSX.Element {
 	return (
 		<motion.button
 			type='button'
-			className='flex h-14 w-14 items-center justify-center rounded-full bg-(--color-brand) text-white shadow-lg'
+			className='flex h-14 w-14 items-center justify-center rounded-full bg-[--color-brand] text-white shadow-lg'
 			whileTap={{ scale: 0.95 }}
 			transition={{ type: 'spring', stiffness: 400, damping: 40 }}
 			onClick={() => {

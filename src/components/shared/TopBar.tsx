@@ -34,7 +34,7 @@ export function TopBar({
 	title,
 	showPeriodSelector,
 	onAvatarClick,
-}: TopBarProps) {
+}: Readonly<TopBarProps>) {
 	const user = useAuthStore((s) => s.user);
 	const activePeriod = useUIStore((s) => s.activePeriod);
 	const customDateRange = useUIStore((s) => s.customDateRange);
@@ -111,10 +111,11 @@ export function TopBar({
 									<div className='mt-4 space-y-3'>
 										<div className='grid grid-cols-2 gap-3'>
 											<div className='space-y-2'>
-												<label className='text-sm font-medium'>
+												<label htmlFor='custom-from' className='text-sm font-medium'>
 													From
 												</label>
 												<Input
+													id='custom-from'
 													type='date'
 													className='h-12'
 													value={customFrom}
@@ -126,10 +127,11 @@ export function TopBar({
 												/>
 											</div>
 											<div className='space-y-2'>
-												<label className='text-sm font-medium'>
+												<label htmlFor='custom-to' className='text-sm font-medium'>
 													To
 												</label>
 												<Input
+													id='custom-to'
 													type='date'
 													className='h-12'
 													value={customTo}

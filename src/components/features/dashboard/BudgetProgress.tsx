@@ -19,7 +19,7 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
 export function BudgetProgress({
 	budgets,
 	expenses,
-}: BudgetProgressProps): React.JSX.Element {
+}: Readonly<BudgetProgressProps>): React.JSX.Element {
 	return (
 		<section className='space-y-3'>
 			<h2 className='text-lg font-semibold'>Budgets</h2>
@@ -46,8 +46,8 @@ export function BudgetProgress({
 						const progress = Math.min(ratio * 100, 100);
 						const fillClass =
 							ratio >= 0.8
-								? '[&>div]:bg-(--color-alert)'
-								: '[&>div]:bg-(--color-positive)';
+								? '[&>div]:bg-[--color-alert]'
+								: '[&>div]:bg-[--color-positive]';
 						const label =
 							CATEGORIES[
 								budget.categoryId as keyof typeof CATEGORIES

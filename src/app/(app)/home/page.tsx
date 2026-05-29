@@ -58,7 +58,7 @@ export default function HomePage() {
 	 // Create members list for PersonBreakdown
 	const members = groups.reduce((acc, group) => {
 		group.memberUids.forEach((uid) => {
-			if (!acc.find((member) => member.uid === uid)) {
+			if (!acc.some((member) => member.uid === uid)) {
 				acc.push({
 					uid,
 					displayName: uid, // Fallback to uid since we don't have members lookup yet

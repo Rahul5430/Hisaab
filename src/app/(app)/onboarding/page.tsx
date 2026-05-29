@@ -17,7 +17,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 type Step = 1 | 2 | 3;
 
-function StepDots({ step }: { step: Step }) {
+function StepDots({ step }: Readonly<{ step: Step }>) {
 	return (
 		<div className='flex items-center justify-center gap-2'>
 			{([1, 2, 3] as const).map((s) => (
@@ -26,7 +26,7 @@ function StepDots({ step }: { step: Step }) {
 					className={cn(
 						'h-2 w-2 rounded-full border',
 						s === step
-							? 'border-transparent bg-(--color-brand)'
+							? 'border-transparent bg-[--color-brand]'
 							: 'border-border bg-transparent'
 					)}
 				/>
@@ -54,18 +54,18 @@ export default function OnboardingPage() {
 	}, [displayName, user?.email]);
 
 	useEffect(() => {
-		if (!loading && user && user.onboardingCompleted) {
+		if (!loading && user?.onboardingCompleted) {
 			router.replace('/home');
 		}
 	}, [loading, user, router]);
 
 	if (!user) return null;
 
-	const advance = () => setStep((s) => (s === 1 ? 2 : s === 2 ? 3 : 3));
+	const advance = () => setStep((s) => (s === 1 ? 2 : 3));
 
 	return (
 		<main className='min-h-dvh w-full bg-background px-6 py-10'>
-			<div className='mx-auto w-full max-w-[390px]'>
+			<div className='mx-auto w-full max-w-97.5'>
 				<StepDots step={step} />
 
 				<div className='mt-8 overflow-hidden'>
@@ -105,10 +105,11 @@ export default function OnboardingPage() {
 									</div>
 
 									<div className='space-y-2'>
-										<label className='text-sm font-medium'>
+										<label htmlFor='display-name' className='text-sm font-medium'>
 											Display name
 										</label>
 										<Input
+											id='display-name'
 											className='h-12'
 											value={displayName}
 											onChange={(e) =>
@@ -162,7 +163,7 @@ export default function OnboardingPage() {
 									</div>
 
 									<div className='space-y-2'>
-										<label className='text-sm font-medium'>
+										<label htmlFor='monthly-income' className='text-sm font-medium'>
 											Amount
 										</label>
 										<div className='flex items-center gap-2'>
@@ -170,6 +171,7 @@ export default function OnboardingPage() {
 												₹
 											</div>
 											<Input
+												id='monthly-income'
 												className='h-12'
 												inputMode='numeric'
 												placeholder='0'

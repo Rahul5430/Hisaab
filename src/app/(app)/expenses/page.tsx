@@ -3,10 +3,11 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { Search } from 'lucide-react';
 import { useRouter,useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ExpenseCard } from '@/components/features/expenses/ExpenseCard';
+import { useAppShell } from '@/components/providers/AppShellContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,7 +22,12 @@ export default function ExpensesPage() {
 	const searchParams = useSearchParams();
 	const user = useAuthStore((s) => s.user);
 	const { expenses, isLoading, error } = useExpenses();
-	
+	const { setConfig } = useAppShell();
+
+	useEffect(() => {
+		setConfig({ showPeriodSelector: true });
+	}, [setConfig]);
+
 	const [showSearch, setShowSearch] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -30,7 +36,8 @@ export default function ExpensesPage() {
 	const ownerParam = searchParams.get('owner');
 
 	const filteredExpenses = useMemo(() => {
-		let filtered = expenses;
+		const safeExpenses = expenses ?? [];
+		let filtered = safeExpenses;
 
 		// Apply URL parameter filters
 		if (categoryParam) {
@@ -66,7 +73,7 @@ export default function ExpensesPage() {
 		}
 
 		return filtered;
-	}, [expenses, categoryParam, ownerParam, user, activeFilter, searchQuery]);
+	}, [expenses, categoryParam, ownerParam, user, searchQuery, activeFilter]);
 
 	// Group expenses by date
 	const expensesByDate = useMemo(() => {
@@ -153,8 +160,8 @@ export default function ExpensesPage() {
 			{/* Loading state */}
 			{isLoading && (
 				<div className="space-y-4">
-					{Array.from({ length: 3 }).map((_, i) => (
-						<div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
+					{['s1', 's2', 's3'].map((key) => (
+						<div key={key} className="h-16 bg-muted rounded-xl animate-pulse" />
 					))}
 				</div>
 			)}

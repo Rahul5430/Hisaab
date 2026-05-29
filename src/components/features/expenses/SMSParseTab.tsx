@@ -9,7 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CATEGORIES, type CategoryId } from '@/constants/categories';
 import { auth } from '@/lib/firebase/client';
@@ -34,19 +40,21 @@ type FormData = {
 	note: string;
 	visibility: 'personal' | 'group';
 	groupId: string | null;
+	paymentMethod: 'upi' | 'card' | 'cash' | 'netbanking' | 'other' | null;
+	upiId: string | null;
 };
 
-export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
+export function SMSParseTab({ onSave }: Readonly<SMSParseTabProps>): React.JSX.Element {
 	const user = useAuthStore((s) => s.user);
 	const { groups } = useGroups();
 	const { lookupMerchantPattern } = useExpenses();
-	
+
 	const [smsText, setSmsText] = useState('');
 	const [parsed, setParsed] = useState<ParsedExpense | null>(null);
 	const [isParsing, setIsParsing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [showSuggestion, setShowSuggestion] = useState(false);
-	
+
 	const [formData, setFormData] = useState<FormData>({
 		amount: '',
 		merchant: '',
@@ -57,6 +65,8 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 		note: '',
 		visibility: 'personal',
 		groupId: null,
+		paymentMethod: null,
+		upiId: null,
 	});
 
 	const handleParseSMS = async () => {
@@ -66,56 +76,62 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 		}
 
 		setIsParsing(true);
-		
+
 		try {
 			// Layer 1+3: Client-side parsing
 			let result = parseSMSClient(smsText);
-			
+
 			// Layer 4: Gemini fallback if no result
 			if (result.resolvedBy === 'none' && auth.currentUser) {
 				const token = await auth.currentUser.getIdToken();
 				const response = await fetch('/api/sms/parse', {
 					method: 'POST',
 					headers: {
-						'Authorization': `Bearer ${token}`,
+						Authorization: `Bearer ${token}`,
 						'Content-Type': 'application/json',
 					},
 					body: JSON.stringify({ smsText }),
 				});
-				
+
 				if (response.ok) {
 					const data = await response.json();
 					result = data.parsed;
 				}
 			}
-			
+
 			setParsed(result);
-			
+
 			// Update form with parsed data
-			setFormData(prev => ({
+			setFormData((prev) => ({
 				...prev,
 				amount: result.amount?.toString() || prev.amount,
 				merchant: result.merchant || prev.merchant,
 				categoryId: result.suggestedCategoryId || prev.categoryId,
-				subcategoryId: result.suggestedSubcategoryId || prev.subcategoryId,
+				subcategoryId:
+					result.suggestedSubcategoryId || prev.subcategoryId,
 				date: result.date || prev.date,
 				time: result.time || prev.time,
+				paymentMethod: result.paymentMethod ?? prev.paymentMethod,
+				upiId: result.upiId ?? prev.upiId,
 			}));
-			
+
 			// Layer 2: Check merchant patterns
 			if (result.merchant && user) {
 				const pattern = await lookupMerchantPattern(result.merchant);
 				if (pattern) {
-					if (pattern.confidence > 0.7 && pattern.confirmedCount > 2) {
+					if (
+						pattern.confidence > 0.7 &&
+						pattern.confirmedCount > 2
+					) {
 						// Silent application
-						setFormData(prev => ({
+						setFormData((prev) => ({
 							...prev,
 							categoryId: pattern.categoryId,
 							subcategoryId: pattern.subcategoryId,
 						}));
 					} else if (pattern.confidence >= 0.4) {
 						// Show suggestion
-						setFormData(prev => ({
+						setFormData((prev) => ({
 							...prev,
 							categoryId: pattern.categoryId,
 							subcategoryId: pattern.subcategoryId,
@@ -139,8 +155,8 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 		}
 
 		// Validation
-		const amount = parseFloat(formData.amount);
-		if (!formData.amount || isNaN(amount) || amount <= 0) {
+		const amount = Number.parseFloat(formData.amount);
+		if (!formData.amount || Number.isNaN(amount) || amount <= 0) {
 			toast.error('Please enter a valid amount');
 			return;
 		}
@@ -176,8 +192,8 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 				date: formData.date,
 				time: formData.time,
 				note: formData.note.trim() || null,
-				paymentMethod: parsed?.paymentMethod || null,
-				upiId: parsed?.upiId || null,
+				paymentMethod: formData.paymentMethod,
+				upiId: formData.upiId,
 				source: 'sms',
 				rawSms: smsText,
 				receiptImageUrl: null,
@@ -196,7 +212,7 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 					await fetch('/api/sms/confirm', {
 						method: 'POST',
 						headers: {
-							'Authorization': `Bearer ${token}`,
+							Authorization: `Bearer ${token}`,
 							'Content-Type': 'application/json',
 						},
 						body: JSON.stringify({
@@ -220,7 +236,7 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 	};
 
 	const handleCategoryChange = (categoryId: string) => {
-		setFormData(prev => ({
+		setFormData((prev) => ({
 			...prev,
 			categoryId,
 			subcategoryId: '', // Reset subcategory when category changes
@@ -229,7 +245,7 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 	};
 
 	const handleSubcategoryChange = (subcategoryId: string) => {
-		setFormData(prev => ({
+		setFormData((prev) => ({
 			...prev,
 			subcategoryId,
 		}));
@@ -240,21 +256,22 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 	const availableSubcategories = selectedCategory?.subcategories || {};
 
 	return (
-		<div className="space-y-6">
-			{/* SMS Input Area */}
-			<div className="space-y-3">
-				<Label htmlFor="sms-text">Paste your bank SMS below</Label>
+		<div className='flex h-full flex-col'>
+			<div className='flex-1 overflow-y-auto space-y-4 py-4 px-4'>
+				{/* SMS Input Area */}
+			<div className='space-y-4'>
+				<Label htmlFor='sms-text'>Paste your bank SMS below</Label>
 				<textarea
-					id="sms-text"
+					id='sms-text'
 					value={smsText}
 					onChange={(e) => setSmsText(e.target.value)}
-					placeholder="Paste your SMS here..."
-					className="w-full min-h-[120px] p-3 border border-[--color-border] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[--color-brand] focus:border-transparent"
+					placeholder='Paste your SMS here...'
+					className='w-full min-h-30 p-3 border border-[--color-border] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[--color-brand] focus:border-transparent'
 				/>
 				<Button
 					onClick={handleParseSMS}
 					disabled={isParsing || !smsText.trim()}
-					className="w-full h-12"
+					className='w-full h-12'
 				>
 					{isParsing ? 'Parsing...' : 'Parse SMS'}
 				</Button>
@@ -262,133 +279,180 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 
 			{/* Parsed Preview */}
 			{parsed && (
-				<div className="space-y-4">
-					<div className="text-sm text-muted-foreground">
-						Parsed successfully with {Math.round(parsed.confidence * 100)}% confidence
+				<div className='space-y-4 border-t border-[--color-border] pt-4'>
+					<div className='text-sm text-muted-foreground'>
+						Parsed successfully with{' '}
+						{Math.round(parsed.confidence * 100)}% confidence
 					</div>
 
 					{/* Amount */}
-					<div className="space-y-2">
-						<Label htmlFor="amount">Amount</Label>
+					<div className='space-y-2'>
+						<Label htmlFor='amount'>Amount</Label>
 						<Input
-							id="amount"
-							type="number"
+							id='amount'
+							type='number'
 							value={formData.amount}
-							onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-							placeholder="0.00"
-							className="h-12"
+							onChange={(e) =>
+								setFormData((prev) => ({
+									...prev,
+									amount: e.target.value,
+								}))
+							}
+							placeholder='0.00'
+							className='h-12'
 						/>
 					</div>
 
 					{/* Merchant */}
-					<div className="space-y-2">
-						<Label htmlFor="merchant">Merchant</Label>
+					<div className='space-y-2'>
+						<Label htmlFor='merchant'>Merchant</Label>
 						<Input
-							id="merchant"
+							id='merchant'
 							value={formData.merchant}
-							onChange={(e) => setFormData(prev => ({ ...prev, merchant: e.target.value }))}
-							placeholder="Merchant name"
-							className="h-12"
+							onChange={(e) =>
+								setFormData((prev) => ({
+									...prev,
+									merchant: e.target.value,
+								}))
+							}
+							placeholder='Merchant name'
+							className='h-12'
 						/>
 					</div>
 
 					{/* Category */}
-					<div className="space-y-2">
-						<Label htmlFor="category">
+					<div className='space-y-2'>
+						<Label htmlFor='category'>
 							Category
 							{showSuggestion && (
-								<Badge variant="secondary" className="ml-2 text-xs">
+								<Badge
+									variant='secondary'
+									className='ml-2 text-xs'
+								>
 									Suggested
 								</Badge>
 							)}
 						</Label>
-						<Select value={formData.categoryId} onValueChange={handleCategoryChange}>
-							<SelectTrigger className="h-12">
-								<SelectValue placeholder="Select category" />
+						<Select
+							value={formData.categoryId}
+							onValueChange={handleCategoryChange}
+						>
+							<SelectTrigger className='h-12'>
+								<SelectValue placeholder='Select category' />
 							</SelectTrigger>
 							<SelectContent>
-								{Object.entries(CATEGORIES).map(([id, category]) => (
-									<SelectItem key={id} value={id}>
-										{category.label}
-									</SelectItem>
-								))}
+								{Object.entries(CATEGORIES).map(
+									([id, category]) => (
+										<SelectItem key={id} value={id}>
+											{category.label}
+										</SelectItem>
+									)
+								)}
 							</SelectContent>
 						</Select>
 					</div>
 
 					{/* Subcategory */}
 					{selectedCategory && (
-						<div className="space-y-2">
-							<Label htmlFor="subcategory">Subcategory</Label>
-							<Select value={formData.subcategoryId} onValueChange={handleSubcategoryChange}>
-								<SelectTrigger className="h-12">
-									<SelectValue placeholder="Select subcategory" />
+						<div className='space-y-2'>
+							<Label htmlFor='subcategory'>Subcategory</Label>
+							<Select
+								value={formData.subcategoryId}
+								onValueChange={handleSubcategoryChange}
+							>
+								<SelectTrigger className='h-12'>
+									<SelectValue placeholder='Select subcategory' />
 								</SelectTrigger>
 								<SelectContent>
-									{Object.entries(availableSubcategories).map(([id, subcategory]) => (
-										<SelectItem key={id} value={id}>
-											{subcategory.label}
-										</SelectItem>
-									))}
+									{Object.entries(availableSubcategories).map(
+										([id, subcategory]) => (
+											<SelectItem key={id} value={id}>
+												{subcategory.label}
+											</SelectItem>
+										)
+									)}
 								</SelectContent>
 							</Select>
 						</div>
 					)}
 
 					{/* Date & Time */}
-					<div className="grid grid-cols-2 gap-3">
-						<div className="space-y-2">
-							<Label htmlFor="date">Date</Label>
+					<div className='grid grid-cols-2 gap-3'>
+						<div className='space-y-2'>
+							<Label htmlFor='date'>Date</Label>
 							<Input
-								id="date"
-								type="date"
+								id='date'
+								type='date'
 								value={formData.date}
-								onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-								className="h-12"
+								onChange={(e) =>
+									setFormData((prev) => ({
+										...prev,
+										date: e.target.value,
+									}))
+								}
+								className='h-12'
 							/>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="time">Time</Label>
+						<div className='space-y-2'>
+							<Label htmlFor='time'>Time</Label>
 							<Input
-								id="time"
-								type="time"
+								id='time'
+								type='time'
 								value={formData.time}
-								onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-								className="h-12"
+								onChange={(e) =>
+									setFormData((prev) => ({
+										...prev,
+										time: e.target.value,
+									}))
+								}
+								className='h-12'
 							/>
 						</div>
 					</div>
 
 					{/* Visibility */}
-					<div className="space-y-2">
+					<div className='space-y-2'>
 						<Label>Visibility</Label>
 						<Tabs
 							value={formData.visibility}
-							onValueChange={(value) => setFormData(prev => ({ 
-								...prev, 
-								visibility: value as 'personal' | 'group' 
-							}))}
+							onValueChange={(value) =>
+								setFormData((prev) => ({
+									...prev,
+									visibility: value as 'personal' | 'group',
+								}))
+							}
 						>
-							<TabsList className="grid w-full grid-cols-2">
-								<TabsTrigger value="personal">Personal</TabsTrigger>
-								<TabsTrigger value="group">Group</TabsTrigger>
+							<TabsList className='grid w-full grid-cols-2'>
+								<TabsTrigger value='personal'>
+									Personal
+								</TabsTrigger>
+								<TabsTrigger value='group'>Group</TabsTrigger>
 							</TabsList>
 						</Tabs>
 					</div>
 
 					{/* Group Selector */}
 					{formData.visibility === 'group' && groups.length > 0 && (
-						<div className="space-y-2">
-							<Label htmlFor="group">Group</Label>
-							<Select value={formData.groupId || ''} onValueChange={(value) => 
-								setFormData(prev => ({ ...prev, groupId: value || null }))
-							}>
-								<SelectTrigger className="h-12">
-									<SelectValue placeholder="Select group" />
+						<div className='space-y-2'>
+							<Label htmlFor='group'>Group</Label>
+							<Select
+								value={formData.groupId || ''}
+								onValueChange={(value) =>
+									setFormData((prev) => ({
+										...prev,
+										groupId: value || null,
+									}))
+								}
+							>
+								<SelectTrigger className='h-12'>
+									<SelectValue placeholder='Select group' />
 								</SelectTrigger>
 								<SelectContent>
 									{groups.map((group) => (
-										<SelectItem key={group.id} value={group.id}>
+										<SelectItem
+											key={group.id}
+											value={group.id}
+										>
 											{group.name}
 										</SelectItem>
 									))}
@@ -398,22 +462,32 @@ export function SMSParseTab({ onSave }: SMSParseTabProps): React.JSX.Element {
 					)}
 
 					{/* Note */}
-					<div className="space-y-2">
-						<Label htmlFor="note">Note (optional)</Label>
+					<div className='space-y-2'>
+						<Label htmlFor='note'>Note (optional)</Label>
 						<Input
-							id="note"
+							id='note'
 							value={formData.note}
-							onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-							placeholder="Add a note..."
-							className="h-12"
+							onChange={(e) =>
+								setFormData((prev) => ({
+									...prev,
+									note: e.target.value,
+								}))
+							}
+							placeholder='Add a note...'
+							className='h-12'
 						/>
 					</div>
 
 					{/* Save Button */}
-					<Button
+</div>
+			)}
+		</div>
+		{parsed && (
+			<div className='sticky bottom-0 left-0 z-10 border-t border-[--color-border] bg-background p-4'>
+				<Button
 						onClick={handleSave}
 						disabled={isSaving}
-						className="w-full h-12"
+						className='w-full h-12'
 					>
 						{isSaving ? 'Saving...' : 'Save Expense'}
 					</Button>

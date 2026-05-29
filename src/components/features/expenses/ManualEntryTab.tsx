@@ -48,9 +48,21 @@ const PAYMENT_METHODS = [
 	{ value: 'other', label: 'Other' },
 ];
 
+const CURRENCY_RATES: Record<string, number> = {
+	INR: 1,
+	USD: 82.5,
+	EUR: 90,
+	GBP: 102,
+};
+
+function convertToINR(value: number, currency: string): number {
+	const rate = CURRENCY_RATES[currency] ?? 1;
+	return Math.round(value * rate * 100) / 100;
+}
+
 export function ManualEntryTab({
 	onSave,
-}: ManualEntryTabProps): React.JSX.Element {
+}: Readonly<ManualEntryTabProps>): React.JSX.Element {
 	const user = useAuthStore((s) => s.user);
 	const { groups } = useGroups();
 	
@@ -75,8 +87,8 @@ export function ManualEntryTab({
 		}
 
 		// Validation
-		const amount = parseFloat(formData.amount);
-		if (!formData.amount || isNaN(amount) || amount <= 0) {
+		const amount = Number.parseFloat(formData.amount);
+		if (!formData.amount || Number.isNaN(amount) || amount <= 0) {
 			toast.error('Please enter a valid amount');
 			return;
 		}
@@ -102,7 +114,7 @@ export function ManualEntryTab({
 				groupId: formData.groupId,
 				amount,
 				currency: formData.currency,
-				amountInINR: formData.currency === 'INR' ? amount : amount, // Conversion to be implemented later
+				amountInINR: convertToINR(amount, formData.currency),
 				merchant: formData.merchant.trim(),
 				categoryId: formData.categoryId,
 				subcategoryId: formData.subcategoryId,
@@ -141,7 +153,8 @@ export function ManualEntryTab({
 	const selectedCurrency = CURRENCIES.find(c => c.code === formData.currency);
 
 	return (
-		<div className="space-y-6">
+		<div className="flex h-full flex-col">
+			<div className="flex-1 overflow-y-auto space-y-4 py-4 px-4">
 			{/* Amount & Currency */}
 			<div className="grid grid-cols-3 gap-3">
 				<div className="col-span-2 space-y-2">
@@ -323,6 +336,8 @@ export function ManualEntryTab({
 			</div>
 
 			{/* Save Button */}
+		</div>
+		<div className="sticky bottom-0 left-0 z-10 border-t border-[--color-border] bg-background p-4">
 			<Button
 				onClick={handleSave}
 				className="w-full h-12"
@@ -330,5 +345,6 @@ export function ManualEntryTab({
 				Save Expense
 			</Button>
 		</div>
+	</div>
 	);
 }

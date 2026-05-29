@@ -43,25 +43,39 @@ export function AddExpenseSheet(): React.JSX.Element {
 	return (
 		<AnimatePresence>
 			{addExpenseSheetOpen && (
-				<Sheet open={addExpenseSheetOpen} onOpenChange={setAddExpenseSheetOpen}>
+				<Sheet
+					open={addExpenseSheetOpen}
+					onOpenChange={setAddExpenseSheetOpen}
+				>
 					<SheetContent
-						side="bottom"
-						className="h-[90vh] max-h-[800px] max-w-[430px] mx-auto rounded-t-2xl"
+						side='bottom'
+						className='flex flex-col max-h-[90dvh] p-0'
 					>
 						{/* Drag handle */}
-						<div className="mx-auto w-12 h-1.5 bg-muted rounded-full mt-2 mb-6" />
-						
-						<Tabs defaultValue="sms" className="h-full">
-							<TabsList className="grid w-full grid-cols-2 mb-6">
-								<TabsTrigger value="sms">SMS Paste</TabsTrigger>
-								<TabsTrigger value="manual">Manual</TabsTrigger>
+						<div className='flex h-12 shrink-0 items-center justify-center'>
+						<div className='h-1.5 w-20 rounded-full bg-slate-200' />
+					</div>
+
+						<Tabs
+							defaultValue='sms'
+							className='flex flex-col flex-1 overflow-hidden'
+						>
+							<TabsList className='grid w-full grid-cols-2 gap-2 mb-4'>
+								<TabsTrigger value='sms'>SMS Paste</TabsTrigger>
+								<TabsTrigger value='manual'>Manual</TabsTrigger>
 							</TabsList>
-							
-							<TabsContent value="sms" className="mt-0 h-full overflow-y-auto">
+
+							<TabsContent
+								value='sms'
+								className='flex-1 overflow-y-auto px-4 pb-8'
+							>
 								<SMSParseTab onSave={handleSave} />
 							</TabsContent>
-							
-							<TabsContent value="manual" className="mt-0 h-full overflow-y-auto">
+
+							<TabsContent
+								value='manual'
+								className='flex-1 overflow-y-auto px-4 pb-8'
+							>
 								<ManualEntryTab onSave={handleSave} />
 							</TabsContent>
 						</Tabs>

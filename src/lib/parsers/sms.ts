@@ -1,4 +1,22 @@
 import { SMS_HEURISTIC_RULES } from '@/constants/heuristics';
+import { MERCHANT_DISPLAY_NAMES } from '@/constants/merchants';
+
+const AMOUNT_PATTERNS = [
+	/₹\s*([\d,]+\.?\d*)/,
+	/Rs\.?\s*([\d,]+\.?\d*)/i,
+	/INR\s*([\d,]+\.?\d*)/i,
+	/debited\s+(?:by|for|with|of)?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+	/([\d,]+\.?\d*)\s+(?:debited|deducted)/i,
+];
+
+const MERCHANT_TRF = /trf\s+to\s+([\w.&\s-]{2,60})(?:\s+UPI|\s+Ref|\s+ref|\s+on|\s+via|\.|$)/i;
+const MERCHANT_AT = /(?:at|to|towards)\s+([\w.&\s-]{2,40})(?:\s+(?:on|via|ref|for|UPI)|\.|$)/i;
+const MERCHANT_VPA = /VPA\s+([\w.-]+@[\w.-]+)/i;
+const UPI_PATTERN = /([\w.-]+@[\w.-]+)/;
+const DATE_4 = /(\d{2})[-/](\d{2})[-/](\d{4})/;
+const DATE_2 = /(\d{2})[-/](\d{2})[-/](\d{2})(?!\d)/;
+const DATE_STR = /(\d{2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i;
+const TIME_PATTERN = /(\d{1,2}):(\d{2})\s*(am|pm)?/i;
 
 export type ParsedExpense = {
 	amount: number | null;
@@ -14,172 +32,106 @@ export type ParsedExpense = {
 	resolvedBy: 'regex' | 'pattern' | 'heuristic' | 'gemini' | 'none';
 };
 
-type RegexPattern = {
-	name: string;
-	pattern: RegExp;
-	extract: (match: RegExpMatchArray) => Partial<ParsedExpense>;
-};
 
-const regexPatterns: RegexPattern[] = [
-	{
-		name: 'HDFC Bank',
-		pattern: /Rs\.?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?debited.*?HDFC/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'card',
-		}),
-	},
-	{
-		name: 'ICICI Bank',
-		pattern: /INR\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?ICICI/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'card',
-		}),
-	},
-	{
-		name: 'SBI',
-		pattern: /(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?debited.*?SBI/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'card',
-		}),
-	},
-	{
-		name: 'Axis Bank',
-		pattern: /(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?debited.*?Axis/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'card',
-		}),
-	},
-	{
-		name: 'Kotak Bank',
-		pattern: /(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?debited.*?Kotak/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'card',
-		}),
-	},
-	{
-		name: 'Generic UPI',
-		pattern: /(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?(?:debited|paid).*?UPI/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'upi',
-		}),
-	},
-	{
-		name: 'Generic Debit',
-		pattern: /(?:Rs\.?|INR|₹)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)\s*.*?debited/i,
-		extract: (match) => ({
-			amount: parseFloat(match[1].replace(/,/g, '')),
-			paymentMethod: 'other',
-		}),
-	},
-];
-
-function extractMerchant(smsText: string): string | null {
-	const merchantPatterns = [
-		/at\s+([^.\n]+)/i,
-		/to\s+([^.\n]+)/i,
-		/VPA\s+([^.\n]+)/i,
-		/from\s+([^.\n]+)/i,
-	];
-
-	for (const pattern of merchantPatterns) {
-		const match = smsText.match(pattern);
-		if (match && match[1]) {
-			return match[1].trim().replace(/\s+/g, ' ');
+function extractAmount(smsText: string): number | null {
+	for (const pattern of AMOUNT_PATTERNS) {
+		const match = pattern.exec(smsText);
+		if (match?.[1]) {
+			return Number.parseFloat(match[1].replaceAll(',', ''));
 		}
 	}
 
 	return null;
+}
+
+function normalizeMerchant(raw: string): string {
+	if (!raw) return raw;
+
+	const cleaned = raw.trim().toLowerCase();
+
+	if (MERCHANT_DISPLAY_NAMES[cleaned]) {
+		return MERCHANT_DISPLAY_NAMES[cleaned];
+	}
+
+	for (const [key, displayName] of Object.entries(MERCHANT_DISPLAY_NAMES)) {
+		if (cleaned.includes(key)) {
+			return displayName;
+		}
+	}
+
+	return raw
+		.toLowerCase()
+		.replace(/\b\w/g, (c) => c.toUpperCase())
+		.trim();
+}
+
+function extractMerchant(smsText: string): string | null {
+	const trfMatch = MERCHANT_TRF.exec(smsText);
+	const atMatch = MERCHANT_AT.exec(smsText);
+	const vpaMatch = MERCHANT_VPA.exec(smsText);
+
+	const merchant = normalizeMerchant(
+		trfMatch?.[1]?.trim() ||
+		atMatch?.[1]?.trim() ||
+		vpaMatch?.[1]?.split('@')[0]?.trim() ||
+		''
+	);
+
+	return merchant || null;
 }
 
 function extractUpiId(smsText: string): string | null {
-	const upiPatterns = [
-		/([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+)/i,
-		/VPA\s+([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+)/i,
-		/to\s+([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+)/i,
-	];
-
-	for (const pattern of upiPatterns) {
-		const match = smsText.match(pattern);
-		if (match && match[1] && match[1].includes('@')) {
-			return match[1].trim();
-		}
-	}
-
-	return null;
+	const match = UPI_PATTERN.exec(smsText);
+	return match?.[1] ? match[1].trim() : null;
 }
 
 function extractDate(smsText: string): string | null {
-	const datePatterns = [
-		/(\d{2}\/\d{2}\/\d{2})/,
-		/(\d{2}-\d{2}-\d{4})/,
-		/(\d{2}-\d{2}-\d{2})/,
-	];
+	let date: string | null = null;
+	const dateMatch6 = DATE_4.exec(smsText);
+	const dateMatch4 = DATE_2.exec(smsText);
+	const dateMatchStr = DATE_STR.exec(smsText);
 
-	for (const pattern of datePatterns) {
-		const match = smsText.match(pattern);
-		if (match && match[1]) {
-			const date = match[1];
-			// Convert DD/MM/YY to YYYY-MM-DD
-			if (date.includes('/')) {
-				const [dd, mm, yy] = date.split('/');
-				const year = 2000 + parseInt(yy);
-				return `${year}-${mm}-${dd}`;
-			}
-			// Convert DD-MM-YYYY to YYYY-MM-DD
-			if (date.includes('-')) {
-				const parts = date.split('-');
-				if (parts[2].length === 4) {
-					return `${parts[2]}-${parts[1]}-${parts[0]}`;
-				} else {
-					const year = 2000 + parseInt(parts[2]);
-					return `${year}-${parts[1]}-${parts[0]}`;
-				}
-			}
-		}
+	if (dateMatch6) {
+		date = `${dateMatch6[3]}-${dateMatch6[2]}-${dateMatch6[1]}`;
+	} else if (dateMatch4) {
+		const year = Number.parseInt(dateMatch4[3], 10) + 2000;
+		date = `${year}-${dateMatch4[2]}-${dateMatch4[1]}`;
+	} else if (dateMatchStr) {
+		const months: Record<string, string> = {
+			jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+			jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+		};
+		date = `${dateMatchStr[3]}-${months[dateMatchStr[2].toLowerCase()]}-${dateMatchStr[1]}`;
 	}
 
-	return null;
+	return date;
 }
 
 function extractTime(smsText: string): string | null {
-	const timePatterns = [
-		/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))/i,
-		/(\d{1,2}:\d{2})/,
-	];
+	const match = TIME_PATTERN.exec(smsText);
+	if (!match) return null;
 
-	for (const pattern of timePatterns) {
-		const match = smsText.match(pattern);
-		if (match && match[1]) {
-			const time = match[1].toUpperCase();
-			// Convert 12-hour to 24-hour format
-			if (time.includes('AM') || time.includes('PM')) {
-				const [timePart, period] = time.split(/\s+/);
-				const [hours, minutes] = timePart.split(':').map(Number);
-				let hour24 = hours;
-				if (period === 'PM' && hours !== 12) hour24 += 12;
-				if (period === 'AM' && hours === 12) hour24 = 0;
-				return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-			}
-			return match[1];
-		}
+	const [, hourText, minuteText, period] = match;
+	let hour = Number.parseInt(hourText, 10);
+	if (period) {
+		const normalized = period.toLowerCase();
+		if (normalized === 'pm' && hour !== 12) hour += 12;
+		if (normalized === 'am' && hour === 12) hour = 0;
 	}
 
-	return null;
+	return `${hour.toString().padStart(2, '0')}:${minuteText}`;
 }
 
 function detectPaymentMethod(smsText: string, upiId: string | null): 'upi' | 'card' | 'cash' | 'netbanking' | 'other' | null {
-	if (upiId) return 'upi';
-	if (smsText.toLowerCase().includes('upi')) return 'upi';
-	if (smsText.toLowerCase().includes('card')) return 'card';
-	if (smsText.toLowerCase().includes('netbanking')) return 'netbanking';
-	if (smsText.toLowerCase().includes('cash')) return 'cash';
-	return null;
+	let paymentMethod: 'upi' | 'card' | 'cash' | 'netbanking' | 'other' | null = null;
+	if (upiId || /upi/i.test(smsText)) {
+		paymentMethod = 'upi';
+	} else if (/credit\s*card|debit\s*card|card\s*no/i.test(smsText)) {
+		paymentMethod = 'card';
+	} else if (/neft|rtgs|imps|net\s*banking/i.test(smsText)) {
+		paymentMethod = 'netbanking';
+	}
+	return paymentMethod;
 }
 
 function isPersonName(merchant: string): boolean {
@@ -254,35 +206,30 @@ function applyHeuristics(smsText: string, merchant: string | null): ParsedExpens
 }
 
 export function parseSMSClient(smsText: string): ParsedExpense {
-	// Layer 1: Regex patterns
-	for (const pattern of regexPatterns) {
-		const match = smsText.match(pattern.pattern);
-		if (match) {
-			const extracted = pattern.extract(match);
-			const merchant = extractMerchant(smsText);
-			const upiId = extractUpiId(smsText);
-			const date = extractDate(smsText);
-			const time = extractTime(smsText);
-			const paymentMethod = extracted.paymentMethod || detectPaymentMethod(smsText, upiId);
+	const amount = extractAmount(smsText);
+	const merchant = extractMerchant(smsText);
+	const upiId = extractUpiId(smsText);
+	const date = extractDate(smsText);
+	const time = extractTime(smsText);
+	const paymentMethod = detectPaymentMethod(smsText, upiId);
 
-			return {
-				amount: extracted.amount ?? null,
-				currency: 'INR',
-				merchant,
-				paymentMethod,
-				upiId,
-				date,
-				time,
-				suggestedCategoryId: null,
-				suggestedSubcategoryId: null,
-				confidence: 0.9,
-				resolvedBy: 'regex',
-			};
-		}
+	if (amount !== null) {
+		return {
+			amount,
+			currency: 'INR',
+			merchant,
+			paymentMethod,
+			upiId,
+			date,
+			time,
+			suggestedCategoryId: null,
+			suggestedSubcategoryId: null,
+			confidence: 0.9,
+			resolvedBy: 'regex',
+		};
 	}
 
 	// Layer 3: Heuristics (only if Layer 1 found no result)
-	const merchant = extractMerchant(smsText);
 	const heuristicResult = applyHeuristics(smsText, merchant);
 	if (heuristicResult) {
 		return heuristicResult;
