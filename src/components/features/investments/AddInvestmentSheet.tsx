@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInvestments } from '@/lib/hooks/useInvestments';
+import { convertToINR } from '@/lib/utils';
 import type { InvestmentSchema } from '@/lib/validators/investment.schema';
 import { useAuthStore } from '@/store/auth.store';
 import { useUIStore } from '@/store/ui.store';
@@ -84,13 +85,13 @@ export function AddInvestmentSheet(): React.JSX.Element {
 			return;
 		}
 
-		const amount = parseFloat(formData.amount);
-		if (!formData.amount || isNaN(amount) || amount <= 0) {
+		const amount = Number.parseFloat(formData.amount);
+		if (!formData.amount || Number.isNaN(amount) || amount <= 0) {
 			toast.error('Please enter a valid amount');
 			return;
 		}
 
-		if (formData.isRecurring && (!formData.recurrenceDay || parseInt(formData.recurrenceDay) < 1 || parseInt(formData.recurrenceDay) > 28)) {
+		if (formData.isRecurring && (!formData.recurrenceDay || Number.parseInt(formData.recurrenceDay) < 1 || Number.parseInt(formData.recurrenceDay) > 28)) {
 			toast.error('Please enter a valid recurrence day (1-28)');
 			return;
 		}
@@ -105,11 +106,11 @@ export function AddInvestmentSheet(): React.JSX.Element {
 				label: formData.label.trim(),
 				amount,
 				currency: formData.currency,
-				amountInINR: formData.currency === 'INR' ? amount : amount, // Conversion to be implemented later
+				amountInINR: convertToINR(amount, formData.currency),
 				date: formData.date,
 				note: formData.note.trim() || null,
 				recurring: formData.isRecurring,
-				recurrenceDay: formData.isRecurring ? parseInt(formData.recurrenceDay) : null,
+				recurrenceDay: formData.isRecurring ? Number.parseInt(formData.recurrenceDay) : null,
 				recurrenceEndDate: formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : null,
 				autoLogged: false,
 				createdAt: Timestamp.now(),
@@ -148,7 +149,7 @@ export function AddInvestmentSheet(): React.JSX.Element {
 		<Sheet open={addInvestmentSheetOpen} onOpenChange={setAddInvestmentSheetOpen}>
 			<SheetContent
 				side="bottom"
-				className="h-[90vh] max-h-[800px] max-w-[430px] mx-auto rounded-t-2xl"
+				className="h-[90vh] max-h-200 max-w-107.5 mx-auto rounded-t-2xl"
 			>
 				{/* Drag handle */}
 				<div className="mx-auto w-12 h-1.5 bg-muted rounded-full mt-2 mb-6" />

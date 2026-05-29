@@ -126,8 +126,8 @@ export function GroupsSection(): React.JSX.Element {
 	if (isLoading) {
 		return (
 			<div className="space-y-2">
-				{Array.from({ length: 3 }).map((_, i) => (
-					<div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+				{['group-loading-1', 'group-loading-2', 'group-loading-3'].map((placeholderId) => (
+					<div key={placeholderId} className="h-12 bg-muted rounded-lg animate-pulse" />
 				))}
 			</div>
 		);

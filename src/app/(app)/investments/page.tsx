@@ -60,13 +60,13 @@ export default function InvestmentsPage() {
 			0
 		);
 
-		const breakdown = investments.reduce(
+		const breakdown = investments.reduce<Record<string, number>>(
 			(acc, inv) => {
 				const label = getInstrumentLabel(inv.instrument);
 				acc[label] = (acc[label] || 0) + inv.amountInINR;
 				return acc;
 			},
-			{} as Record<string, number>
+			{}
 		);
 
 		return { totalInvested: total, breakdownByType: breakdown };
@@ -121,8 +121,8 @@ export default function InvestmentsPage() {
 			{/* Loading state */}
 			{isLoading && (
 				<div className='space-y-4'>
-					{Array.from({ length: 3 }).map((_, i) => (
-						<Skeleton key={i} className='h-16 w-full' />
+					{['investment-loading-1', 'investment-loading-2', 'investment-loading-3'].map((placeholderId) => (
+						<Skeleton key={placeholderId} className='h-16 w-full' />
 					))}
 				</div>
 			)}
@@ -174,7 +174,9 @@ export default function InvestmentsPage() {
 			{/* Investment Detail Sheet */}
 			{selectedInvestment && (
 				<div className='fixed inset-0 z-50 flex items-end justify-center'>
-					<div
+					<button
+						type='button'
+						aria-label='Close investment detail'
 						className='fixed inset-0 bg-black/50'
 						onClick={() => setSelectedInvestment(null)}
 					/>

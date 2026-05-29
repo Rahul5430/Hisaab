@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CATEGORIES, type CategoryId } from '@/constants/categories';
 import { useGroups } from '@/lib/hooks/useGroups';
+import { convertToINR } from '@/lib/utils';
 import type { ExpenseSchema } from '@/lib/validators/expense.schema';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -47,18 +48,6 @@ const PAYMENT_METHODS = [
 	{ value: 'netbanking', label: 'Net Banking' },
 	{ value: 'other', label: 'Other' },
 ];
-
-const CURRENCY_RATES: Record<string, number> = {
-	INR: 1,
-	USD: 82.5,
-	EUR: 90,
-	GBP: 102,
-};
-
-function convertToINR(value: number, currency: string): number {
-	const rate = CURRENCY_RATES[currency] ?? 1;
-	return Math.round(value * rate * 100) / 100;
-}
 
 export function ManualEntryTab({
 	onSave,

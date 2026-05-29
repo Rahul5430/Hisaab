@@ -109,8 +109,17 @@ export default function ExpenseDetailPage() {
 					<Skeleton className="h-6 w-32" />
 					
 					<div className="grid grid-cols-2 gap-4">
-						{Array.from({ length: 8 }).map((_, i) => (
-							<Skeleton key={i} className="h-10 w-full" />
+						{[
+							'expense-loading-1',
+							'expense-loading-2',
+							'expense-loading-3',
+							'expense-loading-4',
+							'expense-loading-5',
+							'expense-loading-6',
+							'expense-loading-7',
+							'expense-loading-8',
+						].map((placeholderId) => (
+							<Skeleton key={placeholderId} className="h-10 w-full" />
 						))}
 					</div>
 				</div>
@@ -268,8 +277,8 @@ export default function ExpenseDetailPage() {
 					<div className="space-y-2">
 						<div className="text-sm text-muted-foreground">Split Details</div>
 						<div className="space-y-2">
-							{expense.splitDetails.shares.map((share, index) => (
-								<div key={index} className="flex justify-between p-3 bg-muted rounded-lg">
+							{expense.splitDetails.shares.map((share) => (
+								<div key={share.uid} className="flex justify-between p-3 bg-muted rounded-lg">
 									<div>
 										<div className="font-medium">{share.uid}</div>
 										<div className="text-sm text-muted-foreground">{share.percentage}%</div>

@@ -9,13 +9,13 @@ const AMOUNT_PATTERNS = [
 	/([\d,]+\.?\d*)\s+(?:debited|deducted)/i,
 ];
 
-const MERCHANT_TRF = /trf\s+to\s+([\w.&\s-]{2,60})(?:\s+UPI|\s+Ref|\s+ref|\s+on|\s+via|\.|$)/i;
-const MERCHANT_AT = /(?:at|to|towards)\s+([\w.&\s-]{2,40})(?:\s+(?:on|via|ref|for|UPI)|\.|$)/i;
-const MERCHANT_VPA = /VPA\s+([\w.-]+@[\w.-]+)/i;
-const UPI_PATTERN = /([\w.-]+@[\w.-]+)/;
+const MERCHANT_TRF = /trf\s+to\s+([\w.&\s-]{2,60}?)(?=\s+(?:on|via|using|ref|for|UPI)|\.|$)/i;
+const MERCHANT_AT = /(?:at|to|towards|for)\s+([\w.&\s-]{2,60}?)(?=\s+(?:on|via|using|ref|for|UPI)|\.|$)/i;
+const MERCHANT_VPA = /VPA\s+([\w.-]+@[\w.-]+)(?=[\s,.;:]|$)/i;
+const UPI_PATTERN = /([\w.-]+@[\w.-]+)(?=[\s,.;:]|$)/;
 const DATE_4 = /(\d{2})[-/](\d{2})[-/](\d{4})/;
 const DATE_2 = /(\d{2})[-/](\d{2})[-/](\d{2})(?!\d)/;
-const DATE_STR = /(\d{2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i;
+const DATE_STR = /(\d{2})[-\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\s](\d{4})/i;
 const TIME_PATTERN = /(\d{1,2}):(\d{2})\s*(am|pm)?/i;
 
 export type ParsedExpense = {
@@ -69,20 +69,22 @@ function extractMerchant(smsText: string): string | null {
 	const trfMatch = MERCHANT_TRF.exec(smsText);
 	const atMatch = MERCHANT_AT.exec(smsText);
 	const vpaMatch = MERCHANT_VPA.exec(smsText);
+	const upiMatch = UPI_PATTERN.exec(smsText);
 
-	const merchant = normalizeMerchant(
+	const rawMerchant =
 		trfMatch?.[1]?.trim() ||
 		atMatch?.[1]?.trim() ||
 		vpaMatch?.[1]?.split('@')[0]?.trim() ||
-		''
-	);
+		upiMatch?.[1]?.split('@')[0]?.trim() ||
+		'';
 
+	const merchant = normalizeMerchant(rawMerchant.replace(/[.,;:]+$/, ''));
 	return merchant || null;
 }
 
 function extractUpiId(smsText: string): string | null {
 	const match = UPI_PATTERN.exec(smsText);
-	return match?.[1] ? match[1].trim() : null;
+	return match?.[1] ? match[1].trim().replace(/[.,;:]+$/, '') : null;
 }
 
 function extractDate(smsText: string): string | null {
@@ -124,7 +126,11 @@ function extractTime(smsText: string): string | null {
 
 function detectPaymentMethod(smsText: string, upiId: string | null): 'upi' | 'card' | 'cash' | 'netbanking' | 'other' | null {
 	let paymentMethod: 'upi' | 'card' | 'cash' | 'netbanking' | 'other' | null = null;
-	if (upiId || /upi/i.test(smsText)) {
+	if (
+		upiId ||
+		/upi/i.test(smsText) ||
+		/phonepe|paytm|google\s*pay|gpay|paytm\s*wallet/i.test(smsText)
+	) {
 		paymentMethod = 'upi';
 	} else if (/credit\s*card|debit\s*card|card\s*no/i.test(smsText)) {
 		paymentMethod = 'card';

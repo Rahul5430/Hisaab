@@ -86,8 +86,8 @@ export default function HomePage() {
 						<div className='h-50 w-50 rounded-full bg-muted animate-pulse' />
 					</div>
 					<div className='space-y-2'>
-						{[1, 2, 3].map((i) => (
-							<div key={i} className='h-12 rounded-xl bg-muted animate-pulse' />
+						{['home-loading-1', 'home-loading-2', 'home-loading-3'].map((placeholderId) => (
+							<div key={placeholderId} className='h-12 rounded-xl bg-muted animate-pulse' />
 						))}
 					</div>
 				</div>

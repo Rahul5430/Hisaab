@@ -50,8 +50,8 @@ export function BudgetManager(): React.JSX.Element {
 			return;
 		}
 
-		const limit = parseFloat(newBudget.monthlyLimit);
-		if (isNaN(limit) || limit <= 0) {
+		const limit = Number.parseFloat(newBudget.monthlyLimit);
+		if (Number.isNaN(limit) || limit <= 0) {
 			toast.error('Please enter a valid budget limit');
 			return;
 		}
@@ -112,8 +112,8 @@ export function BudgetManager(): React.JSX.Element {
 	if (isLoading) {
 		return (
 			<div className="space-y-2">
-				{Array.from({ length: 3 }).map((_, i) => (
-					<div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+				{['budget-loading-1', 'budget-loading-2', 'budget-loading-3'].map((placeholderId) => (
+					<div key={placeholderId} className="h-12 bg-muted rounded-lg animate-pulse" />
 				))}
 			</div>
 		);

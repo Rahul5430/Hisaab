@@ -89,8 +89,8 @@ export function ProfileStack(): React.JSX.Element {
 	const handleSaveIncome = async () => {
 		if (!user || !editingIncome) return;
 
-		const income = parseFloat(editingIncome);
-		if (isNaN(income) || income < 0) {
+		const income = Number.parseFloat(editingIncome);
+		if (Number.isNaN(income) || income < 0) {
 			toast.error('Please enter a valid income amount');
 			return;
 		}
@@ -211,7 +211,7 @@ export function ProfileStack(): React.JSX.Element {
 		<Sheet open={open} onOpenChange={setOpen}>
 			<SheetContent
 				side='right'
-				className='w-full max-w-[430px] border-l border-[--color-border] p-0'
+				className='w-full max-w-107.5 border-l border-[--color-border] p-0'
 			>
 				<SheetHeader className='border-b border-[--color-border]'>
 					<SheetTitle>Profile</SheetTitle>
@@ -254,17 +254,27 @@ export function ProfileStack(): React.JSX.Element {
 										/>
 									</div>
 								) : (
-									<div
-										className='truncate text-sm font-medium cursor-pointer'
+									<button
+										type='button'
+										className='truncate text-sm font-medium text-left'
 										onClick={() => {
 											setEditingName(
 												user?.displayName || ''
 											);
 											setIsEditingName(true);
 										}}
+										onKeyDown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') {
+												e.preventDefault();
+												setEditingName(
+													user?.displayName || ''
+												);
+												setIsEditingName(true);
+											}
+										}}
 									>
 										{user?.displayName || 'Account'}
-									</div>
+									</button>
 								)}
 								<div className='truncate text-sm text-muted-foreground'>
 									{user?.email || ''}
@@ -354,13 +364,7 @@ export function ProfileStack(): React.JSX.Element {
 												{row.label}
 											</div>
 											{row.right ? (
-												<div
-													onClick={(e) =>
-														e.stopPropagation()
-													}
-												>
-													{row.right}
-												</div>
+												row.right
 											) : (
 												<ChevronRight className='size-4 text-muted-foreground' />
 											)}

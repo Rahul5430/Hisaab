@@ -16,7 +16,7 @@ export function Fab(): React.JSX.Element {
 	return (
 		<motion.button
 			type='button'
-			className='flex h-14 w-14 items-center justify-center rounded-full bg-[--color-brand] text-white shadow-lg'
+			className='flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-lg'
 			whileTap={{ scale: 0.95 }}
 			transition={{ type: 'spring', stiffness: 400, damping: 40 }}
 			onClick={() => {

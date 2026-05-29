@@ -122,7 +122,7 @@ function AppShellFrame({
 					onAvatarClick={() => setProfileStackOpen(true)}
 				/>
 
-				<main className='flex-1 overflow-y-auto pb-28 pt-14'>
+				<main className='flex-1 overflow-y-auto pb-28'>
 					{children}
 				</main>
 

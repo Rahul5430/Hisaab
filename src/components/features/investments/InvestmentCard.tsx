@@ -72,7 +72,7 @@ function getOrdinalSuffix(day: number) {
 export function InvestmentCard({
 	investment,
 	onClick,
-}: InvestmentCardProps): React.JSX.Element {
+}: Readonly<InvestmentCardProps>): React.JSX.Element {
 	const iconName = getInstrumentIconName(investment.instrument);
 	const instrumentLabel = getInstrumentLabel(investment.instrument);
 	

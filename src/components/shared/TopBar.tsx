@@ -97,7 +97,10 @@ export function TopBar({
 										)}
 										onClick={() => {
 											setActivePeriod(opt.id);
-											if (opt.id !== 'custom') {
+											if (opt.id === 'custom') {
+												setCustomFrom(customDateRange?.from ?? '');
+												setCustomTo(customDateRange?.to ?? '');
+											} else {
 												setCustomDateRange(null);
 												setPeriodOpen(false);
 											}

@@ -26,36 +26,43 @@ type UIState = {
 	reset: () => void;
 };
 
-export const useUIStore = create<UIState>((set) => {
-	// Initialize from localStorage when available
+export const useUIStore = create<UIState>((set, get) => {
+	const isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+	// Initialize from localStorage when available in the browser
 	let initialActive: ActivePeriod = 'today';
 	let initialCustom: CustomDateRange | null = null;
-	try {
-		const raw = localStorage.getItem('ui.state');
-		if (raw) {
-			const parsed = JSON.parse(raw);
-			if (parsed?.activePeriod) initialActive = parsed.activePeriod;
-			if (parsed?.customDateRange) initialCustom = parsed.customDateRange;
+	if (isBrowser) {
+		try {
+			const raw = window.localStorage.getItem('ui.state');
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (parsed?.activePeriod) {
+					initialActive = parsed.activePeriod;
+				} else if (parsed?.customDateRange) {
+					initialActive = 'custom';
+				}
+				if (parsed?.customDateRange) initialCustom = parsed.customDateRange;
+			}
+		} catch (error) {
+			console.warn('Failed to read UI state from localStorage', error);
 		}
-	} catch (error) {
-		console.warn('Failed to read UI state from localStorage', error);
 	}
 
 	const persist = () => {
+		if (!isBrowser) return;
 		try {
 			const state = {
 				activePeriod: get().activePeriod,
 				customDateRange: get().customDateRange,
 			};
-			localStorage.setItem('ui.state', JSON.stringify(state));
+			window.localStorage.setItem('ui.state', JSON.stringify(state));
 		} catch (error) {
 			console.warn('Failed to persist UI state to localStorage', error);
 		}
 	};
 
-	const get = () => store as unknown as UIState;
-
-	const store = {
+	return {
 		activePeriod: initialActive,
 		customDateRange: initialCustom,
 		selectedGroupId: null,
@@ -78,7 +85,7 @@ export const useUIStore = create<UIState>((set) => {
 			set({ customDateRange: null });
 			persist();
 		},
-		reset: () =>
+		reset: () => {
 			set({
 				activePeriod: 'month',
 				customDateRange: null,
@@ -86,8 +93,8 @@ export const useUIStore = create<UIState>((set) => {
 				addExpenseSheetOpen: false,
 				addInvestmentSheetOpen: false,
 				profileStackOpen: false,
-			}),
+			});
+			persist();
+		},
 	};
-
-	return store;
 });
